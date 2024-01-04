@@ -5,10 +5,12 @@ import dev.adventurecraft.awakening.common.AC_Blocks;
 import dev.adventurecraft.awakening.common.AC_Items;
 import dev.adventurecraft.awakening.extension.block.ExLadderBlock;
 import dev.adventurecraft.awakening.extension.entity.ExLivingEntity;
+import dev.adventurecraft.awakening.mixin.entity.player.MixinPlayerEntity;
 import net.fabricmc.api.EnvType;
 import net.fabricmc.api.Environment;
 import net.minecraft.block.Block;
 import net.minecraft.block.BlockSounds;
+import net.minecraft.client.entity.player.AbstractClientPlayerEntity;
 import net.minecraft.entity.Entity;
 import net.minecraft.entity.ItemEntity;
 import net.minecraft.entity.LivingEntity;
@@ -379,16 +381,25 @@ public abstract class MixinLivingEntity extends MixinEntity implements ExLivingE
      */
     @Overwrite
     public void travel(float xInput, float zInput) {
+        // TODO: There must be a better way to check if something is a player or not, or something to the effect of this condition.
+        boolean isPlayer = this.getClass().isAssignableFrom(AbstractClientPlayerEntity.class);
         if (this.handleFlying()) {
-            double speed = Math.sqrt(xInput * xInput + zInput * zInput);
-            boolean isSneaking = this.method_1373();
-            int verticalDirection = (isSneaking ? -1 : 0) + (this.jumping ? 1 : 0);
-            double verticalSpeed = 0.1d;
+            double yVel;
+            if (isPlayer) {
+                boolean isSneaking = this.method_1373();
+                int verticalDirection = (isSneaking ? -1 : 0) + (this.jumping ? 1 : 0);
+                double verticalSpeed = 0.1d;
+                yVel = verticalDirection * verticalSpeed;
 
-            double yVel = verticalDirection * verticalSpeed;// (double) (-0.1F * zInput) * Math.sin(this.pitch * Math.PI / 180.0);
-//            if (speed < 1.0D) {
-//                yVel *= speed;
-//            }
+            } else {
+                yVel = (double) (-0.1F * zInput) * Math.sin(this.pitch * Math.PI / 180.0);
+                double speed = Math.sqrt(xInput * xInput + zInput * zInput);
+                if (speed < 1.0D) {
+                    yVel *= speed;
+                }
+            }
+
+
 
             this.yVelocity += yVel;
 //            var isSneaking = this.method_1373();
