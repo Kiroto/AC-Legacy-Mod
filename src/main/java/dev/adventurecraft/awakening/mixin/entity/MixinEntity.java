@@ -118,7 +118,7 @@ public abstract class MixinEntity implements ExEntity {
     }
 
     @Shadow
-    public abstract boolean method_1334();
+    public abstract boolean method_1334(); // Is in water
 
     @Shadow
     public abstract void setPosition(double d, double e, double f);
@@ -133,7 +133,7 @@ public abstract class MixinEntity implements ExEntity {
     public abstract ItemEntity dropItem(int i, int j);
 
     @Shadow
-    public abstract boolean method_1335();
+    public abstract boolean method_1335(); // Is in Lava
 
     @Shadow
     protected abstract void setAttacked();

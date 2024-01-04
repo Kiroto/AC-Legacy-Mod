@@ -372,17 +372,32 @@ public abstract class MixinLivingEntity extends MixinEntity implements ExLivingE
         }
     }
 
+    /**
+     * @author Cryect
+     * Javadoc written by Kiroto
+     * @reason Flying I guess
+     */
     @Overwrite
     public void travel(float xInput, float zInput) {
         if (this.handleFlying()) {
             double speed = Math.sqrt(xInput * xInput + zInput * zInput);
-            double yVel = (double) (-0.1F * zInput) * Math.sin(this.pitch * Math.PI / 180.0);
-            if (speed < 1.0D) {
-                yVel *= speed;
-            }
+            boolean isSneaking = this.method_1373();
+            int verticalDirection = (isSneaking ? -1 : 0) + (this.jumping ? 1 : 0);
+            double verticalSpeed = 0.1d;
+
+            double yVel = verticalDirection * verticalSpeed;// (double) (-0.1F * zInput) * Math.sin(this.pitch * Math.PI / 180.0);
+//            if (speed < 1.0D) {
+//                yVel *= speed;
+//            }
 
             this.yVelocity += yVel;
-            float inputSpeed = (float) (0.1 * (Math.abs(zInput * Math.cos(this.pitch * Math.PI / 180.0)) + Math.abs(xInput)));
+//            var isSneaking = this.method_1373();
+//            if (this.jumping && !isSneaking) {
+//                this.yVelocity = 0.3F;
+//            }
+            var absZ = Math.abs(zInput);
+            var absX = Math.abs(xInput);
+            float inputSpeed = (float) (0.1 * Math.sqrt(absZ * absZ + absX * absX));
             this.movementInputToVelocity(xInput, zInput, inputSpeed);
             this.move(this.xVelocity, this.yVelocity, this.zVelocity);
             this.fallDistance = 0.0F;
