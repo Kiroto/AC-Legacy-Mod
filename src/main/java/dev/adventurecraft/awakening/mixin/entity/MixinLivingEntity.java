@@ -121,6 +121,9 @@ public abstract class MixinLivingEntity extends MixinEntity implements ExLivingE
     public int randomLookRate = 100;
     public int randomLookRateVariation = 40;
 
+    public boolean isInFlyingMode = false;
+    public boolean jumpedLastFrame = false;
+
     @Shadow
     public abstract void lookAt(Entity arg, float f, float g);
 
@@ -381,19 +384,24 @@ public abstract class MixinLivingEntity extends MixinEntity implements ExLivingE
      */
     @Overwrite
     public void travel(float xInput, float zInput) {
+        var justJumped = !jumpedLastFrame && this.jumping;
+        jumpedLastFrame = this.jumping;
         // TODO: There must be a better way to check if something is a player or not, or something to the effect of this condition.
         boolean isPlayer = this.getClass().isAssignableFrom(AbstractClientPlayerEntity.class);
-        if (this.handleFlying()) {
+        if (this.handleFlying() && !(isPlayer && !isInFlyingMode)) {
             double yVel;
+            double speed = Math.sqrt(xInput * xInput + zInput * zInput);
+
             if (isPlayer) {
                 boolean isSneaking = this.method_1373();
                 int verticalDirection = (isSneaking ? -1 : 0) + (this.jumping ? 1 : 0);
                 double verticalSpeed = 0.1d;
                 yVel = verticalDirection * verticalSpeed;
-
+                if (this.onGround) {
+                    isInFlyingMode = false;
+                }
             } else {
                 yVel = (double) (-0.1F * zInput) * Math.sin(this.pitch * Math.PI / 180.0);
-                double speed = Math.sqrt(xInput * xInput + zInput * zInput);
                 if (speed < 1.0D) {
                     yVel *= speed;
                 }
@@ -406,9 +414,7 @@ public abstract class MixinLivingEntity extends MixinEntity implements ExLivingE
 //            if (this.jumping && !isSneaking) {
 //                this.yVelocity = 0.3F;
 //            }
-            var absZ = Math.abs(zInput);
-            var absX = Math.abs(xInput);
-            float inputSpeed = (float) (0.1 * Math.sqrt(absZ * absZ + absX * absX));
+            float inputSpeed = (float) (0.1 * speed);
             this.movementInputToVelocity(xInput, zInput, inputSpeed);
             this.move(this.xVelocity, this.yVelocity, this.zVelocity);
             this.fallDistance = 0.0F;
@@ -426,7 +432,8 @@ public abstract class MixinLivingEntity extends MixinEntity implements ExLivingE
             if (Math.abs(this.zVelocity) < 0.01D) {
                 this.zVelocity = 0.0D;
             }
-        } else if (this.method_1334()) {
+        }
+        else if (this.method_1334()) {
             if (this.yVelocity < -0.4D) {
                 this.yVelocity *= 0.8D;
             }
@@ -441,7 +448,8 @@ public abstract class MixinLivingEntity extends MixinEntity implements ExLivingE
             if (this.field_1624 && this.method_1344(this.xVelocity, this.yVelocity + (double) 0.6F - this.y + lastY, this.zVelocity)) {
                 this.yVelocity = 0.3F;
             }
-        } else if (this.method_1335()) {
+        }
+        else if (this.method_1335()) {
             if (this.yVelocity < -0.4D) {
                 this.yVelocity *= 0.5D;
             }
@@ -456,7 +464,8 @@ public abstract class MixinLivingEntity extends MixinEntity implements ExLivingE
             if (this.field_1624 && this.method_1344(this.xVelocity, this.yVelocity + (double) 0.6F - this.y + lastY, this.zVelocity)) {
                 this.yVelocity = 0.3F;
             }
-        } else {
+        }
+        else {
             float slipperiness = 0.91F;
             if (this.onGround) {
                 slipperiness = 0.5460001F;
@@ -467,7 +476,7 @@ public abstract class MixinLivingEntity extends MixinEntity implements ExLivingE
             }
 
             float inputFactor = 0.1627714F / (slipperiness * slipperiness * slipperiness);
-            this.movementInputToVelocity(xInput, zInput, this.onGround ? 0.1F * inputFactor : 0.1F * this.airControl * inputFactor);
+            this.movementInputToVelocity(xInput, zInput, 0.1F * inputFactor * (this.onGround ? 1 : this.airControl));
             slipperiness = 0.91F;
             if (this.onGround) {
                 slipperiness = 0.5460001F;
@@ -514,6 +523,10 @@ public abstract class MixinLivingEntity extends MixinEntity implements ExLivingE
             this.yVelocity *= 0.98F;
             this.xVelocity *= slipperiness;
             this.zVelocity *= slipperiness;
+
+            if (isPlayer && handleFlying() && !this.onGround && justJumped && !isInFlyingMode) {
+                isInFlyingMode = true;
+            }
         }
 
         this.field_1048 = this.limbDistance;
